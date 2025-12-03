@@ -15,7 +15,16 @@ function App() {
     const [showIOSModal, setShowIOSModal] = useState(false);
 
     React.useEffect(() => {
-        setIsKakaoBrowser(isKakao());
+        const isKakaoApp = isKakao();
+        setIsKakaoBrowser(isKakaoApp);
+
+        if (isKakaoApp) {
+            if (isAndroid()) {
+                openInChrome();
+            } else {
+                setShowIOSModal(true);
+            }
+        }
     }, []);
 
     const handleReset = React.useCallback(() => {
