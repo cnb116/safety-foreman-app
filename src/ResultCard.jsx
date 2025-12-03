@@ -7,48 +7,67 @@ const ResultCard = ({ data }) => {
     const [voices, setVoices] = React.useState([]);
 
     React.useEffect(() => {
+        if (typeof window === 'undefined' || !window.speechSynthesis) return;
+
         const loadVoices = () => {
-            const availableVoices = window.speechSynthesis.getVoices();
-            setVoices(availableVoices);
+            try {
+                const availableVoices = window.speechSynthesis.getVoices();
+                setVoices(availableVoices);
+            } catch (e) {
+                console.error("Failed to load voices:", e);
+            }
         };
 
         loadVoices();
 
         // Chrome requires this event to load voices
-        window.speechSynthesis.onvoiceschanged = loadVoices;
+        if (window.speechSynthesis.onvoiceschanged !== undefined) {
+            window.speechSynthesis.onvoiceschanged = loadVoices;
+        }
 
         return () => {
-            window.speechSynthesis.onvoiceschanged = null;
+            if (window.speechSynthesis) {
+                window.speechSynthesis.onvoiceschanged = null;
+            }
         };
     }, []);
 
     const handleSpeak = (text, lang) => {
-        window.speechSynthesis.cancel(); // Stop previous
-
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = lang;
-
-        // Only try to set voice if we have them loaded
-        if (voices.length > 0) {
-            const matchingVoice = voices.find(v => v.lang.includes(lang) || v.lang.includes(lang.split('-')[0]));
-            if (matchingVoice) {
-                utterance.voice = matchingVoice;
-            }
+        if (typeof window === 'undefined' || !window.speechSynthesis) {
+            // alert('이 브라우저는 음성 합성을 지원하지 않습니다.');
+            return;
         }
 
-        // Mobile fix: ensure volume is 1
-        utterance.volume = 1;
-        utterance.rate = 0.9; // Slightly slower for clarity
+        try {
+            window.speechSynthesis.cancel(); // Stop previous
 
-        utterance.onerror = (e) => {
-            console.error('TTS Error:', e);
-            // Don't alert on mobile if it's just a cancellation or interruption
-            if (e.error !== 'interrupted' && e.error !== 'canceled') {
-                // alert('음성 재생 중 오류가 발생했습니다.'); // Optional: suppress alert to avoid annoyance
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = lang;
+
+            // Only try to set voice if we have them loaded
+            if (voices.length > 0) {
+                const matchingVoice = voices.find(v => v.lang.includes(lang) || v.lang.includes(lang.split('-')[0]));
+                if (matchingVoice) {
+                    utterance.voice = matchingVoice;
+                }
             }
-        };
 
-        window.speechSynthesis.speak(utterance);
+            // Mobile fix: ensure volume is 1
+            utterance.volume = 1;
+            utterance.rate = 0.9; // Slightly slower for clarity
+
+            utterance.onerror = (e) => {
+                console.error('TTS Error:', e);
+                // Don't alert on mobile if it's just a cancellation or interruption
+                if (e.error !== 'interrupted' && e.error !== 'canceled') {
+                    // alert('음성 재생 중 오류가 발생했습니다.'); // Optional: suppress alert to avoid annoyance
+                }
+            };
+
+            window.speechSynthesis.speak(utterance);
+        } catch (e) {
+            console.error("Speech synthesis failed:", e);
+        }
     };
 
     // Dummy download function since we don't have the video generation logic from the "Shorts App" yet
