@@ -3,7 +3,7 @@ import InputForm from './InputForm';
 import ResultCard from './ResultCard';
 import { HardHat, Home } from 'lucide-react';
 
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+const API_KEY = "AIzaSyA-DlQRtKStTsEVFVJkXPUH6XioEehD4_I.";
 
 function App() {
     const [result, setResult] = useState(null);

@@ -5,8 +5,28 @@ const ResultCard = ({ data }) => {
     if (!data) return null;
 
     const handleSpeak = (text, lang) => {
+        window.speechSynthesis.cancel(); // Stop previous
+
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = lang;
+
+        // Try to find a specific voice for better quality/matching
+        const voices = window.speechSynthesis.getVoices();
+        const matchingVoice = voices.find(v => v.lang.includes(lang) || v.lang.includes(lang.split('-')[0]));
+
+        if (matchingVoice) {
+            utterance.voice = matchingVoice;
+        }
+
+        // Mobile fix: ensure volume is 1
+        utterance.volume = 1;
+        utterance.rate = 0.9; // Slightly slower for clarity
+
+        utterance.onerror = (e) => {
+            console.error('TTS Error:', e);
+            alert('음성 재생 중 오류가 발생했습니다. 기기 설정을 확인해주세요.');
+        };
+
         window.speechSynthesis.speak(utterance);
     };
 
