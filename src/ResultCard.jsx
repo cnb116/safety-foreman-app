@@ -38,28 +38,24 @@ const ResultCard = ({ data }) => {
         }
 
         try {
-            window.speechSynthesis.cancel(); // Stop previous
+            // Cancel any ongoing speech
+            window.speechSynthesis.cancel();
 
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = lang;
-
-            // Simple voice selection logic for mobile robustness
-            // Only try to set voice if we have them loaded and it's not iOS (which handles lang well by default)
-            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-
-            if (!isIOS && voices.length > 0) {
-                const matchingVoice = voices.find(v => v.lang.includes(lang) || v.lang.includes(lang.split('-')[0]));
-                if (matchingVoice) {
-                    utterance.voice = matchingVoice;
-                }
-            }
-
-            // Mobile fix: ensure volume is 1
             utterance.volume = 1;
-            utterance.rate = 0.9; // Slightly slower for clarity
+            utterance.rate = 0.9;
+
+            // CRITICAL FIX: Keep reference to prevent garbage collection on mobile browsers
+            window.currentUtterance = utterance;
+
+            utterance.onend = () => {
+                window.currentUtterance = null;
+            };
 
             utterance.onerror = (e) => {
                 console.error('TTS Error:', e);
+                window.currentUtterance = null;
             };
 
             window.speechSynthesis.speak(utterance);
