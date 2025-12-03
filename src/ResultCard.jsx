@@ -34,7 +34,6 @@ const ResultCard = ({ data }) => {
 
     const handleSpeak = (text, lang) => {
         if (typeof window === 'undefined' || !window.speechSynthesis) {
-            // alert('이 브라우저는 음성 합성을 지원하지 않습니다.');
             return;
         }
 
@@ -44,8 +43,11 @@ const ResultCard = ({ data }) => {
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = lang;
 
-            // Only try to set voice if we have them loaded
-            if (voices.length > 0) {
+            // Simple voice selection logic for mobile robustness
+            // Only try to set voice if we have them loaded and it's not iOS (which handles lang well by default)
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+            if (!isIOS && voices.length > 0) {
                 const matchingVoice = voices.find(v => v.lang.includes(lang) || v.lang.includes(lang.split('-')[0]));
                 if (matchingVoice) {
                     utterance.voice = matchingVoice;
@@ -58,10 +60,6 @@ const ResultCard = ({ data }) => {
 
             utterance.onerror = (e) => {
                 console.error('TTS Error:', e);
-                // Don't alert on mobile if it's just a cancellation or interruption
-                if (e.error !== 'interrupted' && e.error !== 'canceled') {
-                    // alert('음성 재생 중 오류가 발생했습니다.'); // Optional: suppress alert to avoid annoyance
-                }
             };
 
             window.speechSynthesis.speak(utterance);
@@ -113,7 +111,7 @@ const ResultCard = ({ data }) => {
                                         </span>
                                         <button
                                             onClick={() => handleSpeak(item.text || '', item.lang || 'en-US')}
-                                            className="text-yellow-400 hover:text-yellow-300 transition-colors p-1"
+                                            className="text-yellow-400 hover:text-yellow-300 transition-colors p-1 cursor-pointer touch-manipulation"
                                             title="듣기"
                                         >
                                             <Volume2 size={24} />

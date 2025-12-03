@@ -12,7 +12,13 @@ function App() {
     const [resetKey, setResetKey] = useState(0);
 
     const handleReset = React.useCallback(() => {
-        window.speechSynthesis.cancel();
+        if (typeof window !== 'undefined' && window.speechSynthesis) {
+            try {
+                window.speechSynthesis.cancel();
+            } catch (e) {
+                console.error("Failed to cancel speech:", e);
+            }
+        }
         setResult(null);
         setError(null);
         setLoading(false);
@@ -131,7 +137,7 @@ IMPORTANT: Output ONLY valid JSON. No markdown code blocks.
             {/* Home Button */}
             <button
                 onClick={handleReset}
-                className="absolute top-4 left-4 p-3 bg-gray-800 rounded-full hover:bg-gray-700 transition-colors z-10"
+                className="absolute top-4 left-4 p-3 bg-gray-800 rounded-full hover:bg-gray-700 transition-colors z-50 cursor-pointer touch-manipulation"
                 title="처음으로"
             >
                 <Home size={24} className="text-yellow-500" />
