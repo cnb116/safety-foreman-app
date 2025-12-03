@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import InputForm from './InputForm';
 import ResultCard from './ResultCard';
-import { HardHat, Home } from 'lucide-react';
+import { HardHat, Home, Share2 } from 'lucide-react';
 
 const API_KEY = "AIzaSyC7SKmLcoc5zk0O66NC-TkAztFUZOBp_rI";
 
@@ -24,6 +24,14 @@ function App() {
         setLoading(false);
         setResetKey(prev => prev + 1);
     }, []);
+
+    const handleCopyLink = () => {
+        navigator.clipboard.writeText(window.location.href).then(() => {
+            alert("링크가 복사되었습니다! \n크롬(Chrome)이나 사파리(Safari)에 붙여넣어 실행해주세요.");
+        }).catch(() => {
+            alert("링크 복사에 실패했습니다.");
+        });
+    };
 
     const handleGenerate = React.useCallback(async (inputText) => {
         if (!API_KEY) {
@@ -141,6 +149,15 @@ IMPORTANT: Output ONLY valid JSON. No markdown code blocks.
                 title="처음으로"
             >
                 <Home size={24} className="text-yellow-500" />
+            </button>
+
+            {/* Copy Link Button */}
+            <button
+                onClick={handleCopyLink}
+                className="absolute top-4 right-4 p-3 bg-gray-800 rounded-full hover:bg-gray-700 transition-colors z-50 cursor-pointer touch-manipulation"
+                title="링크 복사"
+            >
+                <Share2 size={24} className="text-yellow-500" />
             </button>
 
             {/* Header */}
