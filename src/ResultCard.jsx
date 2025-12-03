@@ -81,27 +81,30 @@ const ResultCard = ({ data }) => {
 
                     {/* Translations */}
                     <div className="space-y-4">
-                        {data.translations?.map((item, index) => (
-                            <div
-                                key={index}
-                                className="bg-gray-800 rounded-xl p-4 border border-gray-700 hover:border-yellow-500/50 transition-colors"
-                            >
-                                <div className="flex justify-between items-start mb-2">
-                                    <span className="text-xs font-bold text-gray-400 uppercase bg-gray-900 px-2 py-1 rounded">
-                                        {item.lang_name}
-                                    </span>
-                                    <button
-                                        onClick={() => handleSpeak(item.text, item.lang)}
-                                        className="text-yellow-400 hover:text-yellow-300 transition-colors p-1"
-                                        title="듣기"
-                                    >
-                                        <Volume2 size={24} />
-                                    </button>
+                        {Array.isArray(data.translations) && data.translations.map((item, index) => {
+                            if (!item) return null;
+                            return (
+                                <div
+                                    key={index}
+                                    className="bg-gray-800 rounded-xl p-4 border border-gray-700 hover:border-yellow-500/50 transition-colors"
+                                >
+                                    <div className="flex justify-between items-start mb-2">
+                                        <span className="text-xs font-bold text-gray-400 uppercase bg-gray-900 px-2 py-1 rounded">
+                                            {item.lang_name || 'Unknown'}
+                                        </span>
+                                        <button
+                                            onClick={() => handleSpeak(item.text || '', item.lang || 'en-US')}
+                                            className="text-yellow-400 hover:text-yellow-300 transition-colors p-1"
+                                            title="듣기"
+                                        >
+                                            <Volume2 size={24} />
+                                        </button>
+                                    </div>
+                                    <p className="text-xl text-white font-medium mb-1">{item.text || '번역 오류'}</p>
+                                    <p className="text-sm text-gray-400 italic">{item.pronunciation || ''}</p>
                                 </div>
-                                <p className="text-xl text-white font-medium mb-1">{item.text}</p>
-                                <p className="text-sm text-gray-400 italic">{item.pronunciation}</p>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
 

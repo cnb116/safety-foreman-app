@@ -100,6 +100,18 @@ IMPORTANT: Output ONLY valid JSON. No markdown code blocks.
 
             try {
                 const parsedResult = JSON.parse(jsonString);
+
+                // Validate structure
+                if (!parsedResult || typeof parsedResult !== 'object') {
+                    throw new Error("JSON 형식이 올바르지 않습니다.");
+                }
+
+                if (!Array.isArray(parsedResult.translations)) {
+                    // Try to fix if it's wrapped or single object
+                    console.warn("Translations is not an array, attempting to fix...");
+                    parsedResult.translations = [];
+                }
+
                 setResult(parsedResult);
             } catch (e) {
                 console.error("JSON Parse Error:", e, jsonString);
