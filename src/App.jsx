@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import InputForm from './InputForm';
 import ResultCard from './ResultCard';
-import { HardHat, Home, Share2 } from 'lucide-react';
+import { HardHat, Home, Share2, ExternalLink, X } from 'lucide-react';
+import { isKakao, openInChrome, isAndroid } from './utils/browser';
 
 const API_KEY = "AIzaSyC7SKmLcoc5zk0O66NC-TkAztFUZOBp_rI";
 
@@ -10,6 +11,12 @@ function App() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [resetKey, setResetKey] = useState(0);
+    const [isKakaoBrowser, setIsKakaoBrowser] = useState(false);
+    const [showIOSModal, setShowIOSModal] = useState(false);
+
+    React.useEffect(() => {
+        setIsKakaoBrowser(isKakao());
+    }, []);
 
     const handleReset = React.useCallback(() => {
         if (typeof window !== 'undefined' && window.speechSynthesis) {
@@ -31,6 +38,14 @@ function App() {
         }).catch(() => {
             alert("링크 복사에 실패했습니다.");
         });
+    };
+
+    const handleOpenChrome = () => {
+        if (isAndroid()) {
+            openInChrome();
+        } else {
+            setShowIOSModal(true);
+        }
     };
 
     const handleGenerate = React.useCallback(async (inputText) => {
@@ -174,11 +189,23 @@ IMPORTANT: Output ONLY valid JSON. No markdown code blocks.
             </header>
 
             {/* Main Content */}
-            <main className="w-full max-w-4xl space-y-8">
+            <main className="w-full max-w-4xl space-y-8 flex flex-col items-center">
+
+                {/* Kakao Browser Warning Button */}
+                {isKakaoBrowser && (
+                    <button
+                        onClick={handleOpenChrome}
+                        className="mb-6 px-6 py-3 bg-gray-800 border border-yellow-500/50 rounded-full flex items-center gap-2 text-yellow-400 font-bold animate-pulse hover:bg-gray-700 transition-colors cursor-pointer touch-manipulation"
+                    >
+                        <ExternalLink size={20} />
+                        <span>소리가 안 나나요? 크롬으로 열기</span>
+                    </button>
+                )}
+
                 <InputForm resetTrigger={resetKey} onSubmit={handleGenerate} isLoading={loading} />
 
                 {error && (
-                    <div className="p-4 bg-red-500/20 border border-red-500 rounded-xl text-red-200 text-center">
+                    <div className="p-4 bg-red-500/20 border border-red-500 rounded-xl text-red-200 text-center w-full">
                         {error}
                     </div>
                 )}
@@ -190,6 +217,34 @@ IMPORTANT: Output ONLY valid JSON. No markdown code blocks.
             <footer className="mt-20 text-gray-600 text-sm">
                 © 2025 Global Foreman Safety System
             </footer>
+
+            {/* iOS Guide Modal */}
+            {showIOSModal && (
+                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[100] p-4" onClick={() => setShowIOSModal(false)}>
+                    <div className="bg-gray-900 border border-gray-700 p-6 rounded-2xl max-w-sm w-full space-y-4 relative" onClick={e => e.stopPropagation()}>
+                        <button
+                            onClick={() => setShowIOSModal(false)}
+                            className="absolute top-4 right-4 text-gray-400 hover:text-white"
+                        >
+                            <X size={24} />
+                        </button>
+                        <h3 className="text-xl font-bold text-white">브라우저로 열기</h3>
+                        <p className="text-gray-300 leading-relaxed">
+                            아이폰에서는 보안 정책상 앱 강제 전환이 불가능합니다.<br /><br />
+                            <span className="text-yellow-400 font-bold">1. 우측 하단 점 3개(⋯) 메뉴 클릭</span><br />
+                            <span className="text-yellow-400 font-bold">2. '다른 브라우저로 열기' 선택</span>
+                        </p>
+                        <div className="pt-2 flex justify-end">
+                            <button
+                                onClick={() => setShowIOSModal(false)}
+                                className="px-4 py-2 bg-yellow-500 text-black font-bold rounded-lg hover:bg-yellow-400"
+                            >
+                                확인
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
