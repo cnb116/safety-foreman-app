@@ -34,6 +34,7 @@ const ResultCard = ({ data }) => {
 
     const handleSpeak = (text, lang) => {
         if (typeof window === 'undefined' || !window.speechSynthesis) {
+            alert("이 브라우저는 음성 재생을 지원하지 않습니다.");
             return;
         }
 
@@ -41,24 +42,28 @@ const ResultCard = ({ data }) => {
             // Cancel any ongoing speech
             window.speechSynthesis.cancel();
 
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = lang;
-            utterance.volume = 1;
-            utterance.rate = 0.9;
+            // Small timeout to ensure cancel takes effect on mobile
+            setTimeout(() => {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = lang;
+                utterance.volume = 1;
+                utterance.rate = 0.9;
 
-            // CRITICAL FIX: Keep reference to prevent garbage collection on mobile browsers
-            window.currentUtterance = utterance;
+                // CRITICAL FIX: Keep reference to prevent garbage collection
+                window.currentUtterance = utterance;
 
-            utterance.onend = () => {
-                window.currentUtterance = null;
-            };
+                utterance.onend = () => {
+                    window.currentUtterance = null;
+                };
 
-            utterance.onerror = (e) => {
-                console.error('TTS Error:', e);
-                window.currentUtterance = null;
-            };
+                utterance.onerror = (e) => {
+                    console.error('TTS Error:', e);
+                    window.currentUtterance = null;
+                };
 
-            window.speechSynthesis.speak(utterance);
+                window.speechSynthesis.speak(utterance);
+            }, 50);
+
         } catch (e) {
             console.error("Speech synthesis failed:", e);
         }
@@ -107,7 +112,7 @@ const ResultCard = ({ data }) => {
                                         </span>
                                         <button
                                             onClick={() => handleSpeak(item.text || '', item.lang || 'en-US')}
-                                            className="text-yellow-400 hover:text-yellow-300 transition-colors p-1 cursor-pointer touch-manipulation"
+                                            className="text-yellow-400 hover:text-yellow-300 transition-colors p-1 cursor-pointer touch-manipulation active:scale-95"
                                             title="듣기"
                                         >
                                             <Volume2 size={24} />
@@ -118,6 +123,11 @@ const ResultCard = ({ data }) => {
                                 </div>
                             );
                         })}
+                    </div>
+
+                    <div className="text-center text-xs text-gray-500 mt-4">
+                        * 소리가 나지 않으면 카카오톡/인앱 브라우저 대신<br />
+                        <span className="text-yellow-500 font-bold">크롬(Chrome)</span>이나 <span className="text-yellow-500 font-bold">사파리(Safari)</span> 앱에서 실행해주세요.
                     </div>
                 </div>
 
