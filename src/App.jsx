@@ -140,7 +140,7 @@ IMPORTANT: Output ONLY valid JSON. No markdown code blocks.
 
             {/* Main Content */}
             <main className="w-full max-w-4xl space-y-8">
-                <InputForm key={resetKey} onSubmit={handleGenerate} isLoading={loading} />
+                <InputForm resetTrigger={resetKey} onSubmit={handleGenerate} isLoading={loading} />
 
                 {error && (
                     <div className="p-4 bg-red-500/20 border border-red-500 rounded-xl text-red-200 text-center">

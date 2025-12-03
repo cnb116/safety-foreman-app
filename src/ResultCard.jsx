@@ -4,18 +4,36 @@ import { Volume2, Download, AlertTriangle } from 'lucide-react';
 const ResultCard = ({ data }) => {
     if (!data) return null;
 
+    const [voices, setVoices] = React.useState([]);
+
+    React.useEffect(() => {
+        const loadVoices = () => {
+            const availableVoices = window.speechSynthesis.getVoices();
+            setVoices(availableVoices);
+        };
+
+        loadVoices();
+
+        // Chrome requires this event to load voices
+        window.speechSynthesis.onvoiceschanged = loadVoices;
+
+        return () => {
+            window.speechSynthesis.onvoiceschanged = null;
+        };
+    }, []);
+
     const handleSpeak = (text, lang) => {
         window.speechSynthesis.cancel(); // Stop previous
 
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = lang;
 
-        // Try to find a specific voice for better quality/matching
-        const voices = window.speechSynthesis.getVoices();
-        const matchingVoice = voices.find(v => v.lang.includes(lang) || v.lang.includes(lang.split('-')[0]));
-
-        if (matchingVoice) {
-            utterance.voice = matchingVoice;
+        // Only try to set voice if we have them loaded
+        if (voices.length > 0) {
+            const matchingVoice = voices.find(v => v.lang.includes(lang) || v.lang.includes(lang.split('-')[0]));
+            if (matchingVoice) {
+                utterance.voice = matchingVoice;
+            }
         }
 
         // Mobile fix: ensure volume is 1
@@ -24,7 +42,10 @@ const ResultCard = ({ data }) => {
 
         utterance.onerror = (e) => {
             console.error('TTS Error:', e);
-            alert('음성 재생 중 오류가 발생했습니다. 기기 설정을 확인해주세요.');
+            // Don't alert on mobile if it's just a cancellation or interruption
+            if (e.error !== 'interrupted' && e.error !== 'canceled') {
+                // alert('음성 재생 중 오류가 발생했습니다.'); // Optional: suppress alert to avoid annoyance
+            }
         };
 
         window.speechSynthesis.speak(utterance);

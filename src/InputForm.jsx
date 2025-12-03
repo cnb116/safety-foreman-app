@@ -1,10 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { Mic, MicOff, Send, Loader2 } from 'lucide-react';
 
-const InputForm = ({ onSubmit, isLoading }) => {
+const InputForm = ({ onSubmit, isLoading, resetTrigger }) => {
     const [text, setText] = useState('');
     const [isListening, setIsListening] = useState(false);
     const [recognition, setRecognition] = useState(null);
+
+    // Reset form when resetTrigger changes
+    useEffect(() => {
+        setText('');
+        setIsListening(false);
+        if (recognition) {
+            try {
+                recognition.stop();
+            } catch (e) {
+                // Ignore error if already stopped
+            }
+        }
+    }, [resetTrigger]);
 
     useEffect(() => {
         if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
