@@ -5,6 +5,7 @@ const ResultCard = ({ data }) => {
     if (!data) return null;
 
     const [voices, setVoices] = React.useState([]);
+    const [showWarning, setShowWarning] = React.useState(false);
 
     React.useEffect(() => {
         if (typeof window === 'undefined' || !window.speechSynthesis) return;
@@ -34,7 +35,8 @@ const ResultCard = ({ data }) => {
 
     const handleSpeak = (text, lang) => {
         if (typeof window === 'undefined' || !window.speechSynthesis) {
-            alert("이 브라우저는 음성 재생을 지원하지 않습니다.");
+            // Instead of alert, show the warning text
+            setShowWarning(true);
             return;
         }
 
@@ -59,6 +61,8 @@ const ResultCard = ({ data }) => {
                 utterance.onerror = (e) => {
                     console.error('TTS Error:', e);
                     window.currentUtterance = null;
+                    // Also show warning on error
+                    setShowWarning(true);
                 };
 
                 window.speechSynthesis.speak(utterance);
@@ -66,6 +70,7 @@ const ResultCard = ({ data }) => {
 
         } catch (e) {
             console.error("Speech synthesis failed:", e);
+            setShowWarning(true);
         }
     };
 
@@ -125,7 +130,8 @@ const ResultCard = ({ data }) => {
                         })}
                     </div>
 
-                    <div className="text-center text-xs text-gray-500 mt-4">
+                    <div className={`text-center text-xs mt-4 transition-all duration-500 ${showWarning ? 'text-red-400 font-bold scale-105' : 'text-gray-500'}`}>
+                        {showWarning && <AlertTriangle className="inline-block mr-1 mb-1" size={14} />}
                         * 소리가 나지 않으면 카카오톡/인앱 브라우저 대신<br />
                         <span className="text-yellow-500 font-bold">크롬(Chrome)</span>이나 <span className="text-yellow-500 font-bold">사파리(Safari)</span> 앱에서 실행해주세요.
                     </div>
