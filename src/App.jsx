@@ -3,7 +3,7 @@ import InputForm from './InputForm';
 import ResultCard from './ResultCard';
 import { HardHat, Home } from 'lucide-react';
 
-const API_KEY = "AIzaSyA-DlQRtKStTsEVFVJkXPUH6XioEehD4_I.";
+const API_KEY = "AIzaSyC7SKmLcoc5zk0O66NC-TkAztFUZOBp_rI";
 
 function App() {
     const [result, setResult] = useState(null);
