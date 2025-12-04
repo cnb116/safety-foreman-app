@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import InputForm from './InputForm';
 import ResultCard from './ResultCard';
 import { HardHat, Home, Share2, ExternalLink, X } from 'lucide-react';
-import { isKakao, openInChrome, isAndroid } from './utils/browser';
+import { isKakao, openInChrome, isAndroid, isIOS } from './utils/browser';
 
 const API_KEY = "AIzaSyA-DlQRtKStTsEVFVJkXPUH6XioEehD4_I";
 
@@ -223,8 +223,13 @@ IMPORTANT: Output ONLY valid JSON. No markdown code blocks.
             </main>
 
             {/* Footer */}
-            <footer className="mt-20 text-gray-600 text-sm">
-                © 2025 Global Foreman Safety System
+            <footer className="mt-20 text-gray-600 text-sm text-center">
+                <p>© 2025 Global Foreman Safety System</p>
+                <p className="text-xs text-gray-800 mt-2">
+                    v1.0.2 | {isKakaoBrowser ? "Kakao" : "Web"} | {isAndroid() ? "And" : "Other"} | {isIOS() ? "iOS" : "Other"}
+                    <br />
+                    {navigator.userAgent.slice(0, 30)}...
+                </p>
             </footer>
 
             {/* iOS Guide Modal */}
