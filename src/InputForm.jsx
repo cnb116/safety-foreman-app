@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Mic, MicOff, Send, Loader2 } from 'lucide-react';
 
-const InputForm = ({ onSubmit, isLoading, resetTrigger }) => {
+const InputForm = ({ onSubmit, isLoading, loadingText, resetTrigger }) => {
     const [text, setText] = useState('');
     const [isListening, setIsListening] = useState(false);
     const [recognition, setRecognition] = useState(null);
@@ -84,10 +84,10 @@ const InputForm = ({ onSubmit, isLoading, resetTrigger }) => {
                     <textarea
                         value={text}
                         onChange={(e) => setText(e.target.value)}
-                        placeholder={isListening ? "듣고 있습니다... (말씀이 끝나면 자동으로 번역됩니다)" : "예: 야! 반생이 챙겨서 비계 위로 올라가!"}
+                        placeholder={isListening ? "꿈 내용을 말씀해주세요... (말씀이 끝나면 자동으로 분석됩니다)" : "예: 돼지떼가 집으로 들어오는 꿈을 꿨어. 로또 번호 알려줘!"}
                         className={`w-full p-4 pr-12 h-32 bg-gray-900 border-2 rounded-xl text-white placeholder-gray-500 focus:ring-2 transition-all resize-none text-lg ${isListening
-                            ? 'border-red-500 ring-red-500/20 animate-pulse'
-                            : 'border-yellow-500/30 focus:border-yellow-400 focus:ring-yellow-400/20'
+                            ? 'border-purple-500 ring-purple-500/20 animate-pulse'
+                            : 'border-purple-500/30 focus:border-purple-400 focus:ring-purple-400/20'
                             }`}
                         disabled={isLoading}
                     />
@@ -96,7 +96,7 @@ const InputForm = ({ onSubmit, isLoading, resetTrigger }) => {
                         onClick={toggleListening}
                         className={`absolute right-3 bottom-3 p-3 rounded-full transition-all ${isListening
                             ? 'bg-red-600 text-white animate-pulse shadow-[0_0_15px_rgba(220,38,38,0.6)]'
-                            : 'bg-yellow-400 text-black hover:bg-yellow-300'
+                            : 'bg-purple-500 text-white hover:bg-purple-400'
                             }`}
                         title="음성 입력"
                     >
@@ -107,17 +107,17 @@ const InputForm = ({ onSubmit, isLoading, resetTrigger }) => {
                 <button
                     type="submit"
                     disabled={isLoading || !text.trim()}
-                    className="w-full py-4 bg-yellow-400 text-black font-bold text-xl rounded-xl hover:bg-yellow-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(250,204,21,0.3)]"
+                    className="w-full py-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold text-xl rounded-xl hover:from-purple-500 hover:to-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(147,51,234,0.3)]"
                 >
                     {isLoading ? (
                         <>
                             <Loader2 className="animate-spin" />
-                            <span>안전 통역 중...</span>
+                            <span>{loadingText || "분석 중..."}</span>
                         </>
                     ) : (
                         <>
                             <Send size={24} />
-                            <span>통역 시작 (Safety Translate)</span>
+                            <span>꿈해몽 & 번호 받기</span>
                         </>
                     )}
                 </button>

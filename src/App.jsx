@@ -1,20 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import InputForm from './InputForm';
 import ResultCard from './ResultCard';
-import { HardHat, Home, Share2, ExternalLink, X } from 'lucide-react';
+import { Sparkles, Home, Share2, ExternalLink, X, Moon } from 'lucide-react';
 import { isKakao, openInChrome, isAndroid } from './utils/browser';
 
-const API_KEY = "AIzaSyC7SKmLcoc5zk0O66NC-TkAztFUZOBp_rI";
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "AIzaSyDmd3_6dtn65dyA7dQToSwVUs4CCfR1WxI";
 
 function App() {
     const [result, setResult] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [loadingText, setLoadingText] = useState("");
     const [error, setError] = useState(null);
     const [resetKey, setResetKey] = useState(0);
     const [isKakaoBrowser, setIsKakaoBrowser] = useState(false);
     const [showIOSModal, setShowIOSModal] = useState(false);
 
-    React.useEffect(() => {
+    useEffect(() => {
         const isKakaoApp = isKakao();
         setIsKakaoBrowser(isKakaoApp);
 
@@ -26,6 +27,27 @@ function App() {
             }
         }
     }, []);
+
+    // Rolling Loading Message Logic
+    useEffect(() => {
+        let interval;
+        if (loading) {
+            const messages = [
+                "AI가 꿈의 기운을 읽고 있습니다...",
+                "별자리를 분석 중입니다...",
+                "숫자를 점지하는 중..."
+            ];
+            let index = 0;
+            setLoadingText(messages[0]);
+            interval = setInterval(() => {
+                index = (index + 1) % messages.length;
+                setLoadingText(messages[index]);
+            }, 2000);
+        } else {
+            setLoadingText("");
+        }
+        return () => clearInterval(interval);
+    }, [loading]);
 
     const handleReset = React.useCallback(() => {
         if (typeof window !== 'undefined' && window.speechSynthesis) {
@@ -63,12 +85,9 @@ function App() {
             return;
         }
 
-        // Use the passed inputText, or fallback to empty string if something goes wrong
         const textToTranslate = typeof inputText === 'string' ? inputText : "";
 
         if (!textToTranslate.trim()) {
-            // If no text, do nothing or show error? 
-            // For now, just return to avoid empty calls
             return;
         }
 
@@ -77,30 +96,25 @@ function App() {
         setResult(null);
 
         const systemPrompt = `
-당신은 30년 경력의 베테랑 건설 안전 관리자입니다.
-사용자가 입력한 한국어 지시(현장 은어 포함)를 받으면, 즉시 번역하지 말고 **[생각의 사슬]**을 거쳐 JSON으로 출력하세요.
+당신은 100년 수련한 AI 점술가입니다.
+사용자가 꿈을 입력하면 즉시 답하지 말고, 다음 **[점술의 사슬]** 과정을 거쳐 신중하게 응답하세요.
 
-[Step 1: 은어 표준화]
-- '반생이'->'결속선', '공구리'->'콘크리트', '하이바'->'안전모' 등 현장 용어를 표준어로 순화하세요.
+[Step 1: 상징 분석 (Symbolism)]
+- 꿈 내용에서 핵심 키워드 3~4개를 추출하고, 각각의 상징적 의미(재물, 건강, 태몽 등)를 분석하세요.
 
-[Step 2: 안전 의식 주입 (핵심)]
-- 단순 지시라도 반드시 문장 끝에 상황에 맞는 **안전 수칙**을 한 문장 덧붙이세요.
-- 예: '빨리 해' -> '신속하게 작업하되, **이동 시 낙하물에 주의하세요.**'
+[Step 2: 수비학적 변환 (Numerology)]
+- 추출된 키워드를 '로또 번호(1~45)'와 연결하세요. (예: 돼지=8, 불=9, 조상님=1...)
+- **반드시 꿈의 내용과 연관된 번호**를 포함하여 6개의 행운 숫자를 생성하세요.
 
-[Step 3: 다국어 출력]
-- 정제된 내용을 중국어(zh-CN), 베트남어(vi-VN), 영어(en-US)로 번역하세요.
-- 각 언어별로 발음(pronunciation)도 함께 제공하세요.
+[Step 3: 계시 (Revelation)]
+- 위 분석을 바탕으로 희망찬 해몽 풀이와, 신비로운 부적 이미지를 생성하세요.
 
 [JSON 출력 형식]
 {
-  "title": "작업 지시 (Safety Order)",
-  "safety_icon": "⚠️", 
-  "refined_text": "표준어로 순화된 한국어 문장",
-  "translations": [
-    { "lang": "zh-CN", "lang_name": "중국어", "text": "...", "pronunciation": "..." },
-    { "lang": "vi-VN", "lang_name": "베트남어", "text": "...", "pronunciation": "..." },
-    { "lang": "en-US", "lang_name": "영어", "text": "...", "pronunciation": "..." }
-  ]
+  "title": "🌙 한밤의 계시",
+  "interpretation": "황금 돼지는 엄청난 재물을 상징합니다. 하늘을 날았으니 그 운이 승천할 기세군요...",
+  "lucky_numbers": [8, 12, 23, 33, 41, 45],
+  "image_prompt": "Golden pig flying in the starry night sky, tarot card style, glowing aura, mystical, 8k resolution"
 }
 IMPORTANT: Output ONLY valid JSON. No markdown code blocks.
 `;
@@ -144,12 +158,6 @@ IMPORTANT: Output ONLY valid JSON. No markdown code blocks.
                     throw new Error("JSON 형식이 올바르지 않습니다.");
                 }
 
-                if (!Array.isArray(parsedResult.translations)) {
-                    // Try to fix if it's wrapped or single object
-                    console.warn("Translations is not an array, attempting to fix...");
-                    parsedResult.translations = [];
-                }
-
                 setResult(parsedResult);
             } catch (e) {
                 console.error("JSON Parse Error:", e, jsonString);
@@ -158,60 +166,71 @@ IMPORTANT: Output ONLY valid JSON. No markdown code blocks.
 
         } catch (err) {
             console.error(err);
-            setError(`통역 실패: ${err.message}`);
+            setError(`해몽 실패: ${err.message}`);
         } finally {
             setLoading(false);
         }
     }, []);
 
     return (
-        <div className="min-h-screen bg-black text-white flex flex-col items-center py-10 px-4 relative">
+        <div className="min-h-screen bg-indigo-950 text-white flex flex-col items-center py-10 px-4 relative overflow-hidden">
+            {/* Background Stars Effect (Simple CSS) */}
+            <div className="absolute inset-0 z-0 opacity-30 pointer-events-none" style={{
+                backgroundImage: 'radial-gradient(white 1px, transparent 1px)',
+                backgroundSize: '50px 50px'
+            }}></div>
+
             {/* Home Button */}
             <button
                 onClick={handleReset}
-                className="absolute top-4 left-4 p-3 bg-gray-800 rounded-full hover:bg-gray-700 transition-colors z-50 cursor-pointer touch-manipulation"
+                className="absolute top-4 left-4 p-3 bg-indigo-900/80 rounded-full hover:bg-indigo-800 transition-colors z-50 cursor-pointer touch-manipulation border border-indigo-700"
                 title="처음으로"
             >
-                <Home size={24} className="text-yellow-500" />
+                <Home size={24} className="text-purple-300" />
             </button>
 
             {/* Copy Link Button */}
             <button
                 onClick={handleCopyLink}
-                className="absolute top-4 right-4 p-3 bg-gray-800 rounded-full hover:bg-gray-700 transition-colors z-50 cursor-pointer touch-manipulation"
+                className="absolute top-4 right-4 p-3 bg-indigo-900/80 rounded-full hover:bg-indigo-800 transition-colors z-50 cursor-pointer touch-manipulation border border-indigo-700"
                 title="링크 복사"
             >
-                <Share2 size={24} className="text-yellow-500" />
+                <Share2 size={24} className="text-purple-300" />
             </button>
 
             {/* Header */}
-            <header className="mb-10 text-center space-y-4">
-                <div className="inline-flex items-center justify-center p-4 bg-yellow-500 rounded-full shadow-[0_0_40px_rgba(250,204,21,0.4)] mb-4">
-                    <HardHat size={48} className="text-black" />
+            <header className="mb-10 text-center space-y-4 z-10 relative">
+                <div className="inline-flex items-center justify-center p-4 bg-indigo-900 rounded-full shadow-[0_0_40px_rgba(129,140,248,0.4)] mb-4 border border-indigo-500/50">
+                    <Moon size={48} className="text-yellow-300" />
                 </div>
-                <h1 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-600 tracking-tight uppercase">
-                    Global Foreman
+                <h1 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-300 via-indigo-200 to-purple-300 tracking-tight">
+                    Lotto Dream
                 </h1>
-                <p className="text-gray-400 text-lg font-medium">
-                    건설 현장 안전 통역 시스템
+                <p className="text-indigo-300 text-lg font-medium">
+                    AI 로또 꿈해몽 & 번호 추천
                 </p>
             </header>
 
             {/* Main Content */}
-            <main className="w-full max-w-4xl space-y-8 flex flex-col items-center">
+            <main className="w-full max-w-4xl space-y-8 flex flex-col items-center z-10 relative">
 
                 {/* Kakao Browser Warning Button */}
                 {isKakaoBrowser && (
                     <button
                         onClick={handleOpenChrome}
-                        className="mb-6 px-6 py-3 bg-gray-800 border border-yellow-500/50 rounded-full flex items-center gap-2 text-yellow-400 font-bold animate-pulse hover:bg-gray-700 transition-colors cursor-pointer touch-manipulation"
+                        className="mb-6 px-6 py-3 bg-indigo-900 border border-purple-500/50 rounded-full flex items-center gap-2 text-purple-300 font-bold animate-pulse hover:bg-indigo-800 transition-colors cursor-pointer touch-manipulation"
                     >
                         <ExternalLink size={20} />
                         <span>소리가 안 나나요? 크롬으로 열기</span>
                     </button>
                 )}
 
-                <InputForm resetTrigger={resetKey} onSubmit={handleGenerate} isLoading={loading} />
+                <InputForm
+                    resetTrigger={resetKey}
+                    onSubmit={handleGenerate}
+                    isLoading={loading}
+                    loadingText={loadingText}
+                />
 
                 {error && (
                     <div className="p-4 bg-red-500/20 border border-red-500 rounded-xl text-red-200 text-center w-full">
@@ -223,8 +242,8 @@ IMPORTANT: Output ONLY valid JSON. No markdown code blocks.
             </main>
 
             {/* Footer */}
-            <footer className="mt-20 text-gray-600 text-sm">
-                © 2025 Global Foreman Safety System
+            <footer className="mt-20 text-indigo-400 text-sm z-10">
+                © 2025 AI Lotto Dream Interpreter
             </footer>
 
             {/* iOS Guide Modal */}
