@@ -4,7 +4,7 @@ import ResultCard from './ResultCard';
 import { HardHat, Home, Share2, ExternalLink, X } from 'lucide-react';
 import { isKakao, openInChrome, isAndroid } from './utils/browser';
 
-const API_KEY = "AIzaSyC7SKmLcoc5zk0O66NC-TkAztFUZOBp_rI";
+const API_KEY = "AIzaSyA-DlQRtKStTsEVFVJkXPUH6XioEehD4_I";
 
 function App() {
     const [result, setResult] = useState(null);
