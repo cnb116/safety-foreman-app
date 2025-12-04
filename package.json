@@ -1,5 +1,6 @@
 {
     "name": "safety-foreman-app",
+    "homepage": "https://cnb116.github.io/safety-foreman-app",
     "private": true,
     "version": "0.0.0",
     "type": "module",
