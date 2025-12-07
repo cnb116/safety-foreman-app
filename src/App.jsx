@@ -217,7 +217,7 @@ const ResultCard = ({ data }) => {
 // ==========================================
 function App() {
     // API KEY 관리: 환경변수 -> 사용자 입력 순
-    const [apiKey, setApiKey] = useState(import.meta.env.VITE_GEMINI_API_KEY || "AIzaSyAqMy2g4qzOcwq1Z9BW0Pn4Y9coVw47G2c");
+    const [apiKey, setApiKey] = useState(import.meta.env.VITE_GEMINI_API_KEY || "");
     const [result, setResult] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
