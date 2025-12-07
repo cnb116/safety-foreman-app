@@ -266,66 +266,6 @@ function App() {
             setShowKeyInput(true);
             return;
         }
-        try { recognition.stop(); } catch (e) { }
-    }
-    }, [resetTrigger]);
-
-
-
-// ==========================================
-// 3. 메인 앱 (Main App)
-// ==========================================
-function App() {
-    // API KEY 관리: 환경변수 -> 로컬스토리지 -> 사용자 입력 순
-    const [apiKey, setApiKey] = useState(() => {
-        return import.meta.env.VITE_GEMINI_API_KEY || localStorage.getItem('gemini_api_key') || "";
-    });
-    const [result, setResult] = useState(null);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
-    const [resetKey, setResetKey] = useState(0);
-    const [isKakaoBrowser, setIsKakaoBrowser] = useState(false);
-    const [showIOSModal, setShowIOSModal] = useState(false);
-    const [showKeyInput, setShowKeyInput] = useState(false);
-
-    useEffect(() => {
-        const isKakaoApp = isKakao();
-        setIsKakaoBrowser(isKakaoApp);
-        if (isKakaoApp) {
-            isAndroid() ? openInChrome() : setShowIOSModal(true);
-        }
-        // 키가 없으면 입력창 표시
-        if (!apiKey) setShowKeyInput(true);
-    }, []);
-
-    // API Key 변경 시 로컬스토리지 저장
-    const updateApiKey = (newKey) => {
-        setApiKey(newKey);
-        if (newKey) {
-            localStorage.setItem('gemini_api_key', newKey);
-        } else {
-            localStorage.removeItem('gemini_api_key');
-        }
-    };
-
-    const handleReset = useCallback(() => {
-        if (window.speechSynthesis) window.speechSynthesis.cancel();
-        setResult(null);
-        setError(null);
-        setLoading(false);
-        setResetKey(p => p + 1);
-    }, []);
-
-    const handleCopyLink = () => {
-        navigator.clipboard.writeText(window.location.href).then(() => alert("링크 복사 완료!")).catch(() => alert("복사 실패"));
-    };
-
-    const handleGenerate = useCallback(async (inputText) => {
-        if (!apiKey) {
-            setError("API Key가 필요합니다. 상단 열쇠 아이콘을 눌러 키를 입력해주세요.");
-            setShowKeyInput(true);
-            return;
-        }
 
         setLoading(true);
         setError(null);
@@ -446,7 +386,7 @@ IMPORTANT: Output ONLY valid JSON.
                     <div className="bg-gray-900 border border-gray-700 p-6 rounded-2xl max-w-sm w-full space-y-4 relative" onClick={e => e.stopPropagation()}>
                         <button onClick={() => setShowIOSModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-white"><X size={24} /></button>
                         <h3 className="text-xl font-bold text-white">브라우저로 열기</h3>
-                        <p className="text-gray-300">아이폰에서는 보안상 앱 전환이 안됩니다.<br />우측 하단 점 3개 메뉴 -> '다른 브라우저로 열기'를 선택하세요.</p>
+                        <p className="text-gray-300">아이폰에서는 보안상 앱 전환이 안됩니다.<br />우측 하단 점 3개 메뉴 → '다른 브라우저로 열기'를 선택하세요.</p>
                         <div className="flex justify-end"><button onClick={() => setShowIOSModal(false)} className="px-4 py-2 bg-yellow-500 text-black font-bold rounded-lg">확인</button></div>
                     </div>
                 </div>
