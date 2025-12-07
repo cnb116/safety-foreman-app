@@ -288,14 +288,35 @@ IMPORTANT: Output ONLY valid JSON.
 `;
 
         try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-001:generateContent?key=${apiKey}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: systemPrompt + "\n\n사용자 입력: " + inputText }] }] })
-            });
+            let response;
+            try {
+                // 1차 시도: gemini-1.5-flash
+                response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: systemPrompt + "\n\n사용자 입력: " + inputText }] }] })
+                });
+
+                if (!response.ok && response.status === 404) {
+                    throw new Error("MODEL_NOT_FOUND");
+                }
+            } catch (e) {
+                if (e.message === "MODEL_NOT_FOUND") {
+                    console.warn("gemini-1.5-flash failed, falling back to gemini-pro");
+                    // 2차 시도: gemini-pro (Fallback)
+                    response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ contents: [{ parts: [{ text: systemPrompt + "\n\n사용자 입력: " + inputText }] }] })
+                    });
+                } else {
+                    throw e;
+                }
+            }
 
             if (!response.ok) {
                 const errData = await response.json().catch(() => ({}));
+                console.error("API Error Data:", errData); // 상세 로깅
 
                 if (response.status === 429) {
                     throw new Error("사용량이 많아 잠시 지연되고 있습니다. 10초 뒤 다시 시도해주세요.");
@@ -305,10 +326,10 @@ IMPORTANT: Output ONLY valid JSON.
                     if (errData.error?.message?.includes('API key') || response.status === 403) {
                         localStorage.removeItem('gemini_api_key');
                         setShowKeyInput(true);
-                        throw new Error("API Key가 만료되었습니다. 키를 다시 입력해주세요.");
+                        throw new Error("API Key가 만료되었거나 잘못되었습니다. 키를 다시 입력해주세요.");
                     }
                 }
-                throw new Error(errData.error?.message || response.statusText);
+                throw new Error(errData.error?.message || `API Error: ${response.status} ${response.statusText}`);
             }
 
             const data = await response.json();
