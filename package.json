@@ -4,7 +4,6 @@
     "private": true,
     "version": "0.0.0",
     "type": "module",
-    "homepage": "https://cnb116.github.io/safety-foreman-app",
     "scripts": {
         "dev": "vite --host",
         "build": "vite build",
