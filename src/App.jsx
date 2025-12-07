@@ -216,8 +216,10 @@ const ResultCard = ({ data }) => {
 // 3. 메인 앱 (Main App)
 // ==========================================
 function App() {
-    // API KEY 관리: 환경변수 -> 사용자 입력 순
-    const [apiKey, setApiKey] = useState(import.meta.env.VITE_GEMINI_API_KEY || "");
+    // API KEY 관리: 환경변수 -> 로컬스토리지 -> 사용자 입력 순
+    const [apiKey, setApiKey] = useState(() => {
+        return import.meta.env.VITE_GEMINI_API_KEY || localStorage.getItem('gemini_api_key') || "";
+    });
     const [result, setResult] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -235,6 +237,16 @@ function App() {
         // 키가 없으면 입력창 표시
         if (!apiKey) setShowKeyInput(true);
     }, []);
+
+    // API Key 변경 시 로컬스토리지 저장
+    const updateApiKey = (newKey) => {
+        setApiKey(newKey);
+        if (newKey) {
+            localStorage.setItem('gemini_api_key', newKey);
+        } else {
+            localStorage.removeItem('gemini_api_key');
+        }
+    };
 
     const handleReset = useCallback(() => {
         if (window.speechSynthesis) window.speechSynthesis.cancel();
@@ -285,6 +297,12 @@ IMPORTANT: Output ONLY valid JSON.
 
             if (!response.ok) {
                 const errData = await response.json().catch(() => ({}));
+                // 400 Bad Request (API Key Invalid) 처리
+                if (response.status === 400 || response.status === 403) {
+                    localStorage.removeItem('gemini_api_key'); // 잘못된 키 삭제
+                    setShowKeyInput(true);
+                    throw new Error("API Key가 올바르지 않거나 만료되었습니다. 다시 입력해주세요.");
+                }
                 throw new Error(errData.error?.message || response.statusText);
             }
 
@@ -301,8 +319,8 @@ IMPORTANT: Output ONLY valid JSON.
         } catch (err) {
             console.error(err);
             setError(`통역 실패: ${err.message}`);
-            if (err.message.includes('API key') || err.message.includes('403')) {
-                setShowKeyInput(true); // 키 오류 시 입력창 다시 표시
+            if (err.message.includes('API key') || err.message.includes('403') || err.message.includes('Key')) {
+                setShowKeyInput(true);
             }
         } finally {
             setLoading(false);
@@ -328,11 +346,11 @@ IMPORTANT: Output ONLY valid JSON.
                     <input
                         type="password"
                         value={apiKey}
-                        onChange={(e) => setApiKey(e.target.value)}
+                        onChange={(e) => updateApiKey(e.target.value)}
                         placeholder="AIza..."
                         className="w-full p-2 bg-black border border-gray-700 rounded text-white mb-2"
                     />
-                    <p className="text-xs text-gray-400">키는 브라우저에만 임시 저장되거나 리셋됩니다. (.env 권장)</p>
+                    <p className="text-xs text-gray-400">키는 브라우저에 안전하게 저장되며, 앱을 껐다 켜도 유지됩니다.</p>
                 </div>
             )}
 
