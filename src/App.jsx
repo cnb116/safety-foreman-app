@@ -276,13 +276,19 @@ function App() {
 사용자 입력을 받으면 [Step 1: 은어 표준화], [Step 2: 안전 의식 주입], [Step 3: 다국어 출력(중/베/영)] 과정을 거쳐 JSON으로 출력하세요.
 JSON 형식:
 {
-  "title": "작업 지시 (Safety Order)",
+  "safety_icon": "⚠️",
+  "refined_text": "표준어 문장 + 안전 수칙",
+  "translations": [
+    { "lang": "zh-CN", "lang_name": "중국어", "text": "...", "pronunciation": "..." },
+    { "lang": "vi-VN", "lang_name": "베트남어", "text": "...", "pronunciation": "..." },
+    { "lang": "en-US", "lang_name": "영어", "text": "...", "pronunciation": "..." }
   ]
 }
 IMPORTANT: Output ONLY valid JSON.
 `;
 
-        const models = ['gemini-2.0-flash', 'gemini-1.5-flash-001', 'gemini-1.5-pro'];
+        const models = ['gemini-1.5-flash', 'gemini-pro'];
+        let rateLimitError = null;
         let lastError = null;
 
         for (const model of models) {
@@ -298,17 +304,16 @@ IMPORTANT: Output ONLY valid JSON.
                     const errData = await response.json().catch(() => ({}));
 
                     if (response.status === 429) {
-                        console.warn(`Model ${model} hit rate limit. Continuing...`);
-                        lastError = new Error("Rate Limit Exceeded");
+                        console.warn(`Model ${model} hit rate limit.`);
+                        rateLimitError = new Error("사용량이 많아 잠시 지연되고 있습니다. 10초 뒤 다시 시도해주세요.");
                         continue;
                     }
 
-                    // 400 Bad Request (API Key Invalid) 처리
                     if (response.status === 400 || response.status === 403) {
                         if (errData.error?.message?.includes('API key') || response.status === 403) {
                             localStorage.removeItem('gemini_api_key');
                             setShowKeyInput(true);
-                            throw new Error("API Key가 올바르지 않거나 만료되었습니다. 다시 입력해주세요.");
+                            throw new Error("API Key가 만료되었습니다. 키를 다시 입력해주세요.");
                         }
                     }
                     throw new Error(errData.error?.message || response.statusText);
@@ -324,22 +329,20 @@ IMPORTANT: Output ONLY valid JSON.
                 if (!parsedResult.translations) parsedResult.translations = [];
                 setResult(parsedResult);
 
-                // 성공하면 루프 종료 및 함수 리턴 (매우 중요)
                 setLoading(false);
                 return;
 
             } catch (err) {
                 console.warn(`Model ${model} failed:`, err);
                 lastError = err;
-                // 마지막 모델이 아니면 계속 진행
-                if (model !== models[models.length - 1]) continue;
             }
         }
 
-        // 모든 모델 실패 시 에러 처리
+        const finalError = rateLimitError || lastError;
         console.error("All models failed");
-        setError(`통역 실패: ${lastError?.message || "알 수 없는 오류"}`);
-        if (lastError?.message?.includes('API key') || lastError?.message?.includes('403') || lastError?.message?.includes('Key')) {
+        setError(`통역 실패: ${finalError?.message || "알 수 없는 오류"}`);
+
+        if (finalError?.message?.includes('API key') || finalError?.message?.includes('Key')) {
             setShowKeyInput(true);
         }
         setLoading(false);
@@ -412,3 +415,4 @@ IMPORTANT: Output ONLY valid JSON.
 }
 
 export default App;
+
