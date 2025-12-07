@@ -266,16 +266,76 @@ function App() {
             setShowKeyInput(true);
             return;
         }
+        try { recognition.stop(); } catch (e) { }
+    }
+    }, [resetTrigger]);
+
+
+
+// ==========================================
+// 3. 메인 앱 (Main App)
+// ==========================================
+function App() {
+    // API KEY 관리: 환경변수 -> 로컬스토리지 -> 사용자 입력 순
+    const [apiKey, setApiKey] = useState(() => {
+        return import.meta.env.VITE_GEMINI_API_KEY || localStorage.getItem('gemini_api_key') || "";
+    });
+    const [result, setResult] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const [resetKey, setResetKey] = useState(0);
+    const [isKakaoBrowser, setIsKakaoBrowser] = useState(false);
+    const [showIOSModal, setShowIOSModal] = useState(false);
+    const [showKeyInput, setShowKeyInput] = useState(false);
+
+    useEffect(() => {
+        const isKakaoApp = isKakao();
+        setIsKakaoBrowser(isKakaoApp);
+        if (isKakaoApp) {
+            isAndroid() ? openInChrome() : setShowIOSModal(true);
+        }
+        // 키가 없으면 입력창 표시
+        if (!apiKey) setShowKeyInput(true);
+    }, []);
+
+    // API Key 변경 시 로컬스토리지 저장
+    const updateApiKey = (newKey) => {
+        setApiKey(newKey);
+        if (newKey) {
+            localStorage.setItem('gemini_api_key', newKey);
+        } else {
+            localStorage.removeItem('gemini_api_key');
+        }
+    };
+
+    const handleReset = useCallback(() => {
+        if (window.speechSynthesis) window.speechSynthesis.cancel();
+        setResult(null);
+        setError(null);
+        setLoading(false);
+        setResetKey(p => p + 1);
+    }, []);
+
+    const handleCopyLink = () => {
+        navigator.clipboard.writeText(window.location.href).then(() => alert("링크 복사 완료!")).catch(() => alert("복사 실패"));
+    };
+
+    const handleGenerate = useCallback(async (inputText) => {
+        if (!apiKey) {
+            setError("API Key가 필요합니다. 상단 열쇠 아이콘을 눌러 키를 입력해주세요.");
+            setShowKeyInput(true);
+            return;
+        }
 
         setLoading(true);
         setError(null);
         setResult(null);
-
         const systemPrompt = `
 당신은 30년 경력의 베테랑 건설 안전 관리자입니다.
 사용자 입력을 받으면 [Step 1: 은어 표준화], [Step 2: 안전 의식 주입], [Step 3: 다국어 출력(중/베/영)] 과정을 거쳐 JSON으로 출력하세요.
 JSON 형식:
 {
+  "title": "작업 지시 (Safety Order)",
   "safety_icon": "⚠️",
   "refined_text": "표준어 문장 + 안전 수칙",
   "translations": [
@@ -287,65 +347,46 @@ JSON 형식:
 IMPORTANT: Output ONLY valid JSON.
 `;
 
-        const models = ['gemini-1.5-flash', 'gemini-pro'];
-        let rateLimitError = null;
-        let lastError = null;
+        try {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ parts: [{ text: systemPrompt + "\n\n사용자 입력: " + inputText }] }] })
+            });
 
-        for (const model of models) {
-            try {
-                console.log(`Trying model: ${model}`);
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: systemPrompt + "\n\n사용자 입력: " + inputText }] }] })
-                });
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
 
-                if (!response.ok) {
-                    const errData = await response.json().catch(() => ({}));
-
-                    if (response.status === 429) {
-                        console.warn(`Model ${model} hit rate limit.`);
-                        rateLimitError = new Error("사용량이 많아 잠시 지연되고 있습니다. 10초 뒤 다시 시도해주세요.");
-                        continue;
-                    }
-
-                    if (response.status === 400 || response.status === 403) {
-                        if (errData.error?.message?.includes('API key') || response.status === 403) {
-                            localStorage.removeItem('gemini_api_key');
-                            setShowKeyInput(true);
-                            throw new Error("API Key가 만료되었습니다. 키를 다시 입력해주세요.");
-                        }
-                    }
-                    throw new Error(errData.error?.message || response.statusText);
+                if (response.status === 429) {
+                    throw new Error("사용량이 많아 잠시 지연되고 있습니다. 10초 뒤 다시 시도해주세요.");
                 }
 
-                const data = await response.json();
-                const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                if (!textResponse) throw new Error("API 응답이 비어있습니다.");
-
-                const jsonString = textResponse.replace(/```json/g, '').replace(/```/g, '').trim();
-                const parsedResult = JSON.parse(jsonString);
-
-                if (!parsedResult.translations) parsedResult.translations = [];
-                setResult(parsedResult);
-
-                setLoading(false);
-                return;
-
-            } catch (err) {
-                console.warn(`Model ${model} failed:`, err);
-                lastError = err;
+                if (response.status === 400 || response.status === 403) {
+                    if (errData.error?.message?.includes('API key') || response.status === 403) {
+                        localStorage.removeItem('gemini_api_key');
+                        setShowKeyInput(true);
+                        throw new Error("API Key가 만료되었습니다. 키를 다시 입력해주세요.");
+                    }
+                }
+                throw new Error(errData.error?.message || response.statusText);
             }
-        }
 
-        const finalError = rateLimitError || lastError;
-        console.error("All models failed");
-        setError(`통역 실패: ${finalError?.message || "알 수 없는 오류"}`);
+            const data = await response.json();
+            const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (!textResponse) throw new Error("API 응답이 비어있습니다.");
 
-        if (finalError?.message?.includes('API key') || finalError?.message?.includes('Key')) {
-            setShowKeyInput(true);
+            const jsonString = textResponse.replace(/```json/g, '').replace(/```/g, '').trim();
+            const parsedResult = JSON.parse(jsonString);
+
+            if (!parsedResult.translations) parsedResult.translations = [];
+            setResult(parsedResult);
+
+        } catch (err) {
+            console.error("Generate failed:", err);
+            setError(`통역 실패: ${err.message}`);
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
 
     }, [apiKey]);
 
@@ -415,4 +456,3 @@ IMPORTANT: Output ONLY valid JSON.
 }
 
 export default App;
-
