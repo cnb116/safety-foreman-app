@@ -288,43 +288,62 @@ JSON 형식:
 IMPORTANT: Output ONLY valid JSON.
 `;
 
-        try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-001:generateContent?key=${apiKey}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: systemPrompt + "\n\n사용자 입력: " + inputText }] }] })
-            });
+        const models = ['gemini-1.5-flash', 'gemini-2.0-flash-exp', 'gemini-pro'];
+        let lastError = null;
 
-            if (!response.ok) {
-                const errData = await response.json().catch(() => ({}));
-                // 400 Bad Request (API Key Invalid) 처리
-                if (response.status === 400 || response.status === 403) {
-                    localStorage.removeItem('gemini_api_key'); // 잘못된 키 삭제
-                    setShowKeyInput(true);
-                    throw new Error("API Key가 올바르지 않거나 만료되었습니다. 다시 입력해주세요.");
+        for (const model of models) {
+            try {
+                console.log(`Trying model: ${model}`);
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: systemPrompt + "\n\n사용자 입력: " + inputText }] }] })
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json().catch(() => ({}));
+                    // 400 Bad Request (API Key Invalid) 처리
+                    if (response.status === 400 || response.status === 403) {
+                        // 키가 확실히 틀린 경우 반복 중단
+                        if (errData.error?.message?.includes('API key') || response.status === 403) {
+                            localStorage.removeItem('gemini_api_key');
+                            setShowKeyInput(true);
+                            throw new Error("API Key가 올바르지 않거나 만료되었습니다. 다시 입력해주세요.");
+                        }
+                    }
+                    throw new Error(errData.error?.message || response.statusText);
                 }
-                throw new Error(errData.error?.message || response.statusText);
+
+                const data = await response.json();
+                const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (!textResponse) throw new Error("API 응답이 비어있습니다.");
+
+                const jsonString = textResponse.replace(/```json/g, '').replace(/```/g, '').trim();
+                const parsedResult = JSON.parse(jsonString);
+
+                if (!parsedResult.translations) parsedResult.translations = [];
+                setResult(parsedResult);
+
+                // 성공하면 루프 종료 및 함수 리턴
+                setLoading(false);
+                return;
+
+            } catch (err) {
+                console.warn(`Model ${model} failed:`, err);
+                lastError = err;
+                // 마지막 모델이 아니면 계속 진행
+                if (model !== models[models.length - 1]) continue;
             }
-
-            const data = await response.json();
-            const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (!textResponse) throw new Error("API 응답이 비어있습니다.");
-
-            const jsonString = textResponse.replace(/```json/g, '').replace(/```/g, '').trim();
-            const parsedResult = JSON.parse(jsonString);
-
-            if (!parsedResult.translations) parsedResult.translations = [];
-            setResult(parsedResult);
-
-        } catch (err) {
-            console.error(err);
-            setError(`통역 실패: ${err.message}`);
-            if (err.message.includes('API key') || err.message.includes('403') || err.message.includes('Key')) {
-                setShowKeyInput(true);
-            }
-        } finally {
-            setLoading(false);
         }
+
+        // 모든 모델 실패 시 에러 처리
+        console.error("All models failed");
+        setError(`통역 실패: ${lastError?.message || "알 수 없는 오류"}`);
+        if (lastError?.message?.includes('API key') || lastError?.message?.includes('403') || lastError?.message?.includes('Key')) {
+            setShowKeyInput(true);
+        }
+        setLoading(false);
+
     }, [apiKey]);
 
     return (
