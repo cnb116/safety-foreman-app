@@ -277,18 +277,12 @@ function App() {
 JSON 형식:
 {
   "title": "작업 지시 (Safety Order)",
-  "safety_icon": "⚠️",
-  "refined_text": "표준어 문장 + 안전 수칙",
-  "translations": [
-    { "lang": "zh-CN", "lang_name": "중국어", "text": "...", "pronunciation": "..." },
-    { "lang": "vi-VN", "lang_name": "베트남어", "text": "...", "pronunciation": "..." },
-    { "lang": "en-US", "lang_name": "영어", "text": "...", "pronunciation": "..." }
   ]
 }
 IMPORTANT: Output ONLY valid JSON.
 `;
 
-        const models = ['gemini-1.5-flash', 'gemini-2.0-flash-exp', 'gemini-pro'];
+        const models = ['gemini-2.0-flash', 'gemini-1.5-flash-001', 'gemini-1.5-pro'];
         let lastError = null;
 
         for (const model of models) {
@@ -302,9 +296,15 @@ IMPORTANT: Output ONLY valid JSON.
 
                 if (!response.ok) {
                     const errData = await response.json().catch(() => ({}));
+
+                    if (response.status === 429) {
+                        console.warn(`Model ${model} hit rate limit. Continuing...`);
+                        lastError = new Error("Rate Limit Exceeded");
+                        continue;
+                    }
+
                     // 400 Bad Request (API Key Invalid) 처리
                     if (response.status === 400 || response.status === 403) {
-                        // 키가 확실히 틀린 경우 반복 중단
                         if (errData.error?.message?.includes('API key') || response.status === 403) {
                             localStorage.removeItem('gemini_api_key');
                             setShowKeyInput(true);
@@ -324,7 +324,7 @@ IMPORTANT: Output ONLY valid JSON.
                 if (!parsedResult.translations) parsedResult.translations = [];
                 setResult(parsedResult);
 
-                // 성공하면 루프 종료 및 함수 리턴
+                // 성공하면 루프 종료 및 함수 리턴 (매우 중요)
                 setLoading(false);
                 return;
 
